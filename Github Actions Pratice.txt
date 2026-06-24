@@ -1,0 +1,61 @@
+# GitHub Actions Topics
+=======================
+
+1. Write a simple GitHub Actions workflow with a single job.
+
+2. Write a simple GitHub Actions workflow for a checkout job.
+
+3. Write a simple GitHub Actions workflow using a multi-line script (`|`).
+
+4. Write a simple GitHub Actions workflow that runs a shell script.
+
+5. Write a simple GitHub Actions workflow with multiple jobs (Build, Test, and Deploy).
+
+6. Write a simple GitHub Actions workflow for uploading and downloading artifacts.
+
+7. Write a simple GitHub Actions workflow demonstrating variables:
+
+   * Step-level variables
+   * Job-level variables
+   * Workflow-level variables
+   * Repository-level variables
+
+8. Write simple GitHub Actions workflows for the following events:
+
+   * push
+   * pull_request
+   * workflow_dispatch
+   * schedule (cron jobs)
+   * create
+   * delete
+   * release
+   * issues
+   * issue_comment
+   * pull_request_review
+   * workflow_run
+   * repository_dispatch
+   * branch-specific triggers
+   * tag-specific triggers
+   * path-based triggers
+
+9. Write a simple GitHub Actions workflow using concurrency.
+
+10. Write a simple GitHub Actions workflow using job and step timeouts.
+
+11. Write simple GitHub Actions workflows demonstrating Matrix Strategy:
+
+    * `${{ matrix.os }}`
+    * `${{ matrix.node }}`
+    * `${{ matrix.env }}`
+    * `${{ matrix.java }}`
+    * `${{ matrix.region }}`
+    * Multiple matrix combinations
+    * Dynamic matrix values
+    * Matrix with `include`
+    * Matrix with `exclude`
+    * Matrix with environment-specific configurations
+    * Matrix with different operating systems and versions
+    * Matrix fail-fast configuration
+    * Matrix max-parallel configuration
+    * Matrix strategy for Build, Test, and Deploy pipelines
+    * Matrix strategy for multi-region deployments
