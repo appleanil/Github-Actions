@@ -1,0 +1,95 @@
+name: Build, Test and Deploy to Tomcat
+
+on:
+  workflow_dispatch:
+
+jobs:
+
+  Build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout Source Code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Step 2: Setup Java
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # Step 3: Build Application
+      - name: Build WAR File
+        run: mvn clean package
+
+      # Step 4: Verify WAR File
+      - name: List WAR File
+        run: ls -l target/
+
+      # Step 5: Upload Build Artifact
+      - name: Upload WAR Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: maven-war
+          path: target/*.war
+
+
+  Test:
+    runs-on: ubuntu-latest
+    needs: Build
+
+    steps:
+      # Step 1: Checkout Code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Step 2: Setup Java
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # Step 3: Run Unit Tests
+      - name: Execute Tests
+        run: mvn test
+
+      # Step 4: Test Result
+      - name: Test Completed
+        run: echo "All test cases passed successfully."
+
+
+  Deploy:
+    runs-on: ubuntu-latest
+    needs: Test
+
+    steps:
+      # Step 1: Download Build Artifact
+      - name: Download WAR Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: maven-war
+          path: target
+
+      # Step 2: Verify Downloaded WAR
+      - name: List Downloaded Files
+        run: ls -l target/
+
+      # Step 3: Deploy WAR to Tomcat
+      - name: Deploy Application
+        env:
+          TOMCAT_URL: ${{ secrets.TOMCAT_URL }}
+          TOMCAT_USER: ${{ secrets.TOMCAT_USERNAME }}
+          TOMCAT_PASS: ${{ secrets.TOMCAT_PASSWORD }}
+        run: |
+          WAR_FILE=$(ls target/*.war | head -n 1)
+
+          curl -u "$TOMCAT_USER:$TOMCAT_PASS" \
+          --upload-file "$WAR_FILE" \
+          "$TOMCAT_URL/manager/text/deploy?path=/maven-web-application&update=true"
+
+      # Step 4: Deployment Success
+      - name: Deployment Completed
+        run: echo "Application deployed successfully to Tomcat."
