@@ -46,7 +46,7 @@ This ensures Maven can run and the project builds consistently on any machine.
 We run Maven to compile the project and generate the WAR file:
 
 ```
-mvn -B clean package
+mvn clean package
 ```
 
 The WAR file will be stored under:
