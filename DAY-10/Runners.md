@@ -26,6 +26,9 @@ SELF-HOSTED
 12. Add code for Build, SonarQube, Security Checks, Nexus, Tomcat and Kubernetes.
 
 
+
+
+
 1. EC2 Instance: **t2.medium** with **30 GB** storage for GitHub Actions.
 
 2. Go to **Settings → Actions → Runners**.
