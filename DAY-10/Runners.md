@@ -40,6 +40,7 @@ SELF-HOSTED
 5. Install Docker:
 
 ```bash
+sudo apt update -y
 sudo apt install docker.io -y
 ```
 
