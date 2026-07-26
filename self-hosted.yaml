@@ -1,0 +1,181 @@
+name: Docker CICD
+
+on:
+  workflow_dispatch:
+
+jobs:
+
+  Build-Stage:
+    runs-on: self-hosted
+
+    steps:
+      - name: Check the Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java and Maven
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - name: Build the Project
+        run: mvn clean package
+
+      - name: Display WAR File
+        run: ls -l target/
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: maven-war
+          path: target/*.war
+
+  Test-Stage:
+    runs-on: self-hosted
+    needs: Build-Stage
+
+    steps:
+      - name: Check the Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - name: Execute Tests
+        run: mvn test
+
+  Sonarqube:
+    runs-on: self-hosted
+    needs: Test-Stage
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: SonarQube Scan
+        run: |
+          mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            -Dsonar.host.url=http://15.206.194.28:9000 \
+            -Dsonar.projectKey=maven-webapplication-project-kkfunda \
+            -Dsonar.token=squ_72c4daaa1bddc59c6e4aae33720cc902cef5ee2e
+
+  Nexus-Stage:
+    runs-on: self-hosted
+    needs: Sonarqube
+
+    env:
+      NEXUS_USERNAME: admin
+      NEXUS_PASSWORD: apple
+
+    steps:
+      - name: Check the Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - name: Create Maven settings.xml
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<EOF
+          <settings>
+            <servers>
+              <server>
+                <id>nexus</id>
+                <username>${NEXUS_USERNAME}</username>
+                <password>${NEXUS_PASSWORD}</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
+
+      - name: Verify settings.xml
+        run: cat ~/.m2/settings.xml
+
+      - name: Deploy Artifact to Nexus
+        run: mvn -s ~/.m2/settings.xml clean deploy
+
+  Deploy-Tomcat:
+    runs-on: self-hosted
+    needs: Nexus-Stage
+
+    steps:
+      - name: Download WAR Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: maven-war
+          path: target
+
+      - name: Deploy WAR to Tomcat
+        run: |
+          WAR_FILE=$(find target -name "*.war" | head -1)
+
+          curl -v -u "admin:admin" \
+            --upload-file "$WAR_FILE" \
+            "http://43.204.219.200:8080/manager/text/deploy?path=/maven-web-application&update=true"
+
+  Docker-Push:
+    runs-on: self-hosted
+    needs: Deploy-Tomcat
+
+    steps:
+      - name: Check the Code
+        uses: actions/checkout@v4
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: maven-war
+          path: target
+
+      - name: Display WAR File
+        run: ls -l target/
+
+      - name: Build Docker Image
+        run: docker build -t anildocker11/maven-docker-kastom:0.0.1 .
+
+      - name: Push Docker Image
+        run: docker push anildocker11/maven-docker-kastom:0.0.1
+
+  Kubernetes-EKS-Stage:
+    runs-on: self-hosted
+    needs: Build-Stage
+
+    steps:
+      - name: Check out the Code
+        uses: actions/checkout@v4
+
+      - name: Configure kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --region ap-south-1 \
+            --name my-k8s-cluster
+
+      - name: Verify the EKS Cluster
+        run: |
+          kubectl get nodes
+          kubectl get ns
+
+      - name: Deployment the Application
+        run: |
+          kubectl apply -f deployment.yaml    #if we are using path then mention like.github/dep.yaml kubernetes/workflows/dep.yaml
+
+      - name: Status of Deployment Application
+        run: |
+          kubectl get deployment
+          kubectl get svc
+          kubectl get po
+          kubectl get all
